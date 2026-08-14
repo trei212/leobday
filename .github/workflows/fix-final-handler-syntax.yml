@@ -1,0 +1,34 @@
+name: Fix final handler syntax
+on:
+  push:
+    paths:
+      - '.syntax-fix-trigger'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix JavaScript syntax
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          bad = 'else if(a==="done"){trackFinalForward();state.step="done"};else if(a==="reset")'
+          good = 'else if(a==="done"){trackFinalForward();state.step="done"}else if(a==="reset")'
+          if bad not in s:
+              raise SystemExit('Expected broken handler syntax not found')
+          s = s.replace(bad, good, 1)
+          p.write_text(s)
+          PY
+      - name: Commit fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix final tracker handler syntax"
+          git push
