@@ -1,0 +1,39 @@
+name: Restore pre-title welcome
+on:
+  push:
+    paths:
+      - '.restore-pre-title-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore welcome screen
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          replacements = [
+              ('.rule{height:2px;background:var(--ink);margin:22px 0 46px;', '.rule{height:2px;background:var(--ink);margin:22px 0 42px;'),
+              ('.welcome h2{font-size:clamp(34px,11vw,48px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:68px 0 0;', '.welcome h2{font-size:clamp(34px,11vw,48px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:58px 0 0;'),
+              ('.punchline{display:inline}.welcome .friends-line,.welcome h2 .punchline{white-space:nowrap}', '.punchline{display:inline}'),
+              ('<h1>memories<br><span class="friends-line">with friends:</span><br><span class="accent punchline">priceless.</span></h1><h2>dinner:<br><span class="accent punchline">unfortunately not.</span></h2>', '<h1>memories<br>with<br>friends:<br><span class="accent punchline">priceless.</span></h1><h2>dinner:<br><span class="accent punchline">unfortunately<br>not.</span></h2>')
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Missing expected text: {old}')
+              s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Commit update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Restore welcome before title experiments"
+          git push
