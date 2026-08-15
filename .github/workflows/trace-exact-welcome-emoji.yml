@@ -37,11 +37,31 @@ jobs:
           s=s.replace(old_svg,new_svg,1)
           p.write_text(s)
           PY
-      - name: Commit update
+      - name: Commit index through GitHub API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git diff --cached --quiet || git commit -m "Trace welcome emoji from approved reference"
-          git push
+          python - <<'PY'
+          import os, json, base64, urllib.request
+          from pathlib import Path
+          api='https://api.github.com/repos/trei212/leobday/contents/index.html'
+          headers={
+            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
+            'Accept':'application/vnd.github+json',
+            'X-GitHub-Api-Version':'2022-11-28',
+            'User-Agent':'leo-dinner-workflow'
+          }
+          req=urllib.request.Request(api,headers=headers)
+          with urllib.request.urlopen(req) as r:
+              current=json.load(r)
+          payload=json.dumps({
+            'message':'Trace welcome emoji from approved reference',
+            'content':base64.b64encode(Path('index.html').read_bytes()).decode(),
+            'sha':current['sha'],
+            'branch':'main'
+          }).encode()
+          req=urllib.request.Request(api,data=payload,headers={**headers,'Content-Type':'application/json'},method='PUT')
+          with urllib.request.urlopen(req) as r:
+              print(r.status)
+          PY
