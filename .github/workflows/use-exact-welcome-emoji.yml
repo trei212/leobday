@@ -1,0 +1,51 @@
+name: Use exact welcome emoji
+on:
+  push:
+    paths:
+      - '.exact-emoji-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write exact emoji asset and update welcome
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import base64
+          p=Path('index.html')
+          s=p.read_text()
+
+          old_css='.welcome-watermark{position:absolute;right:-8px;bottom:50px;width:210px;height:210px;color:var(--accent);opacity:.09;transform:rotate(-5deg);pointer-events:none;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}'
+          new_css='.welcome-watermark{position:absolute;right:0;top:320px;width:217px;height:auto;opacity:1;pointer-events:none;display:block}'
+          if old_css not in s:
+              raise SystemExit('expected current emoji css not found')
+          s=s.replace(old_css,new_css,1)
+
+          old_media='.welcome-watermark{right:-10px;bottom:52px;width:200px;height:200px}'
+          new_media='.welcome-watermark{right:0;top:292px;width:200px;height:auto}'
+          if old_media not in s:
+              raise SystemExit('expected current mobile emoji css not found')
+          s=s.replace(old_media,new_media,1)
+
+          old_svg='<svg class="welcome-watermark" viewBox="0 0 120 120" aria-hidden="true"><g><circle cx="60" cy="60" r="45"/><path d="M38 43l14 11-14 3"/><path d="M84 44L70 54l14 10"/><path d="M29 68L92 84c-5 17-17 26-32 27-16 0-29-8-35-20-4-9-3-18 4-23Z"/></g></svg>'
+          new_img='<img class="welcome-watermark" src="emoji-reference.png" alt="" aria-hidden="true">'
+          if old_svg not in s:
+              raise SystemExit('expected current emoji svg not found')
+          s=s.replace(old_svg,new_img,1)
+          p.write_text(s)
+
+          data=base64.b64decode('''iVBORw0KGgoAAAANSUhEUgAAAaIAAAAgCAYAAACW+yU0AAAACXBIWXMAAAsTAAALEwEAmpwYAAAgAElEQVR4nOzdeZycVZ3//9d91kl2kiWbJSCQBBGxgLsIgiCoM0iOuIwM44hj0cGJn3H67mfwzAyOo+OIY3RcnL0EBBEEEFEE1J2QQkg2s7uub6/Pj/g0bQhIbsp95vP1dU1TbpV31SX9+u63z1vObqtW7dOCQkJoaioSKmpqWrXrp2ysjL169dPqampSkpK5OTkKC8vT2lpaWrUqJHk5GRVVFSooKBAJ0+e1Lhx43TixAkdPXpUSUlJys7OVkpKinLz8xUfH6+goCDFxMSooKBAu3fvVlpamvLy8lRQUKDr16/ryJEjGjRokKZNm6bWrVsrLS1NQ4cO1d69e1VQUKCCggIVFBRo/fr1Gjx4sJo0aaI777xTgwYN0qRJk/TGG29o+fLlGjRokJYvX66YmBiVlJTo8OHDGjRokJYuXaqUlBTVrl1bwcHBGjNmjKZNm6Y1a9Zo8+bNWrRokYYOHaqQkBB17txZqampGjt2rJYtW6bQ0FAlJSVpwYIFWr58uYYOHaqSkhI1bNhQvXr10jPPPKMlS5Zo1KhRysrK0vLly/XZZ59p+vTp6t+/v9q3b6+QkBBFR0fr6NGjGj58uKKjo9W8eXNlZGTo8OHDWrBggU6cOKHWrVurV69e6tevnyZMmKAjR45o/fr1Gj58uPr27avjx49r2LBhWrNmjYYMGaKSkhKVlpbq2LFjGjJkiC5evKhRo0apV69eGjJkiJYuXaqgoCDt3btXkydPVkREhMaPH6+SkhK1b99e06ZN07Fjx/Tcc89p4cKFWrx4sTp37qzOnTtr1qxZGjNmjOrUqaOQkBCNHj1aZ86c0cSJE/XBBx9o2LBhGj58uJYtW6Y+ffqoU6dOGjJkiKZNm6aUlBQNGTJE3bp10+7du/Xhhx9q2LBhGjNmjM6ePauvf/3rGjNmjGbNmuX6+g4dOqQJEyZo2LBh+vDDD7V48WK9+uqrfvHFF3r11Vd1+PBh7d+/X8OGDdPnn3+uSZMm6bnnntP48eN14MABffvtt5o4caIWL16s5cuXa8yYMWrTpo3efPNN7dixQ2+88YbGjRun8ePHq3///oqLi9O8efP0zTff6I477tD777+v3bt3a+XKlbr55pv17rvv6v7779fIkSO1ceNGjR49WlOmTFFsbKxGjRqlmTNn6tlnn9VLL72kKVOm6JprrtGAAQP05ptv6vDhw+rSpYumTZumo0eP6tNPP9WgQYP0xhtvaPTo0crIyFC7du00b948JSYm6sMPP9TAgQNVWFiovXv36r333tOLL76oN954Q40bN1ZGRobWrFmjgIAANWvWTB988IG+++47HTlyRGlpaZo3b56WL1+ukSNHauDAgerWrZveffddDRs2TFu3btWUKVNUUFCg1atX6/3339fWrVs1ePBg7d+/X7Nnz9bChQv1wgsv6L333tO6det0+PBhDR48WDt37tTUqVNVVFSkt956S8OGDdMPP/ygV199VYMGDdKAAQPUvXt3NWnSRMePH9fUqVN1+PBhzZw5U2vWrNG8efN05swZzZ8/X5MnT1ZkZKR69eqllStX6r333tP48eP1xBNPaNiwYUpOTlZubq4WL16s5cuXa+XKlfrss8/07LPP6u2339akSZO0fPlyHT9+XL169dL48eO1cuVKjRgxQpMnT9Yvv/yivXv36umnn9Ztt92m6dOnq2XLljp27JjGjBmjDz/8UI0bN9bDDz+svXv36r333tPrr7+u5557TtOnT9fs2bP16KOP6tKlSxo9erTmz5+vF154QX379lVoaKhmzJihP/7xj7rxxhs1ePBg7du3T8eOHdOIESP0zTffaNCgQXr77bf15JNPqk2bNjp79qy+++47paWl6f3339e4ceM0fPhwHT16VF988YXGjRun999/X+PHj9eQIUO0a9cuDRo0SFOnTtWAAQPUvHlzHTp0SIsWLdLChQv15ptv6u6779YHH3ygPn36qG/fvkpOTlZ8fLzGjh2rKVOmaPXq1WrZsqXWrFmjmJgYzZ49W0uXLtW2bdu0Y8cO/fzzzxo3bpzGjRuniIgIjR49WmPHjtWCBQt0zz33aP369frxxx81cOBA7dmzR+vXr9fMmTPVtGlTJSUl6d5779Xnn3+uQYMG6c4779Rrr72mWbNmaePGjZo+fbrGjh2rYcOGqaSkRFu2bNGcOXNUVFSkRx99VIsXL9bkyZO1aNEiPfPMM5o2bZq2bNmi77//XqNGjdKDDz6oCRMmaMOGDVq0aJH69++vN954QzNnztSxY8c0ePBg7dy5U+PGjVNVVZVWrFih6667TgMGDNDXX3+t1atXa9SoUZo1a5YmTZqkqVOn6tVXX9Wf/vQnDRw4UMOGDdP48eP1yy+/6NChQ9q+fbs6dOigVatWaebMmZo6dapGjhyphQsX6qabbtLKlSt1+PBhPf/88xo2bJh69+6t+Ph4rVy5UuPGjdOIESN0yy23aMSIEfrpp5+0cOFCffPNN7r33nv12GOPqVWrVnriiSf03nvv6d5779WgQYP08ccf6+jRo3rxxRd14MABjR8/Xjt27NDi...?''' )
+          Path('emoji-reference.png').write_bytes(data)
+          PY
+      - name: Commit update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html emoji-reference.png
+          git diff --cached --quiet || git commit -m "Use exact welcome emoji reference"
+          git push
