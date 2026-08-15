@@ -1,0 +1,33 @@
+name: Update laugh watermark
+on:
+  push:
+    paths:
+      - '.update-laugh-watermark-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update watermark expression
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text()
+          old = '<svg class="welcome-watermark" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-8 60 60)"><circle cx="54" cy="58" r="38"/><path d="M36 50c5-7 10-7 15 0M59 48c5-7 10-7 15 0M35 66c7 17 30 20 41 2-13 5-27 5-41-2Z"/><path d="M91 31l9-8M96 43l13-1M88 21l3-12"/></g></svg>'
+          new = '<svg class="welcome-watermark" viewBox="0 0 120 120" aria-hidden="true"><g transform="rotate(-8 60 60)"><circle cx="54" cy="58" r="38"/><path d="M34 49c6-8 12-8 17 0"/><path d="M58 47c6-8 12-8 17 0"/><path d="M33 62c8 23 36 27 51 4-16 8-34 8-51-4Z"/><path d="M40 76c10 6 24 6 34 0"/><path d="M23 50c-5 7-6 14-3 21"/><path d="M27 52c-6 3-9 8-10 14"/><path d="M79 48c4 6 6 12 5 18"/><path d="M83 51c5 3 8 8 9 14"/><path d="M94 31l9-8M99 44l13-1M90 21l3-12"/></g></svg>'
+          if old not in s:
+              raise SystemExit('Expected current watermark SVG not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+      - name: Commit update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Make welcome watermark more crying-laughing"
+          git push
