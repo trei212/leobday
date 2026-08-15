@@ -1,0 +1,36 @@
+name: Fix welcome structure
+on:
+  push:
+    paths:
+      - '.fix-welcome-structure-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix welcome layout structure
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          old_css='.screen{flex:1;display:flex;flex-direction:column;padding:28px 24px;animation:fadeUp 320ms both}.screen.welcome{padding:32px 24px 28px;animation-duration:420ms;position:relative}.eyebrow{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2)}.rule{height:2px;background:var(--ink);margin:22px 0 34px;animation:ruleIn 600ms 180ms both;transform-origin:left}h1{font-size:clamp(38px,12vw,52px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:0;max-width:9ch}.welcome h2{font-size:clamp(34px,11vw,48px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:44px 0 0;max-width:10ch}.accent{color:var(--accent)}.welcome-note{font-size:16px;font-weight:500;color:var(--muted2);margin-top:4px}.welcome-bottom-rule{width:44%;margin:0 0 14px}.welcome-bottom-meta{margin-bottom:18px}.welcome-spacer{flex:.60;min-height:12px}.welcome h1,.welcome h2{max-width:none}.welcome h1{font-size:52px}.welcome h2{font-size:50px;margin-top:46px}.punchline{display:inline}.welcome-watermark{position:absolute;right:-72px;bottom:34px;width:348px;height:348px;color:var(--accent);opacity:.09;transform:rotate(-5deg);pointer-events:none;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}.spacer{flex:1;min-height:28px}@media(max-width:390px){.welcome h1{font-size:48px}.welcome h2{font-size:46px}.welcome-watermark{right:-66px;bottom:36px;width:326px;height:326px}.welcome-spacer{flex:.56;min-height:10px}.welcome-bottom-rule{width:44%}}'
+          new_css='.screen{flex:1;display:flex;flex-direction:column;padding:28px 24px;animation:fadeUp 320ms both}.screen.welcome{padding:32px 24px 8px;animation-duration:420ms;position:relative}.eyebrow{font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted2)}.rule{height:2px;background:var(--ink);margin:22px 0 34px;animation:ruleIn 600ms 180ms both;transform-origin:left}h1{font-size:clamp(38px,12vw,52px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:0;max-width:9ch}.welcome h2{font-size:clamp(34px,11vw,48px);line-height:.98;letter-spacing:-.035em;font-weight:800;margin:44px 0 0;max-width:10ch}.accent{color:var(--accent)}.welcome-note{font-size:16px;font-weight:500;color:var(--muted2);margin-top:4px}.welcome-bottom-rule{width:44%;margin:38px 0 14px}.welcome-bottom-meta{margin-bottom:0}.welcome-spacer{flex:1;min-height:28px}.welcome h1,.welcome h2{max-width:none}.welcome h1{font-size:52px}.welcome h2{font-size:50px;margin-top:46px}.punchline{display:inline}.welcome-watermark{position:absolute;right:-55px;bottom:14px;width:298px;height:298px;color:var(--accent);opacity:.09;transform:rotate(-5deg);pointer-events:none;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}.spacer{flex:1;min-height:28px}@media(max-width:390px){.welcome h1{font-size:48px}.welcome h2{font-size:46px}.welcome-watermark{right:-50px;bottom:16px;width:280px;height:280px}.welcome-spacer{flex:1;min-height:24px}.welcome-bottom-rule{width:44%}}'
+          if old_css not in s: raise SystemExit('expected welcome css not found')
+          s=s.replace(old_css,new_css,1)
+          old='<h2>dinner:<br><span class="accent punchline">unfortunately<br>not</span></h2><div class="spacer welcome-spacer"></div><div class="rule welcome-bottom-rule"></div><div class="welcome-bottom-meta"><div class="eyebrow">AMS LEO DINNER TALLY</div><div class="welcome-note">sorry it took so long.</div></div><button class="primary" data-action="start">'
+          new='<h2>dinner:<br><span class="accent punchline">unfortunately<br>not</span></h2><div class="rule welcome-bottom-rule"></div><div class="welcome-bottom-meta"><div class="eyebrow">AMS LEO DINNER TALLY</div><div class="welcome-note">sorry it took so long.</div></div><div class="spacer welcome-spacer"></div><button class="primary" data-action="start">'
+          if old not in s: raise SystemExit('expected welcome structure not found')
+          s=s.replace(old,new,1)
+          p.write_text(s)
+          PY
+      - name: Commit update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Fix welcome layout structure"
+          git push
