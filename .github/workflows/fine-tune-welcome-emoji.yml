@@ -1,0 +1,32 @@
+name: Fine tune welcome emoji
+on:
+  push:
+    paths:
+      - '.fine-tune-welcome-emoji-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Lift emoji slightly
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+          s=s.replace('right:0;bottom:54px;width:217px;height:212.5px','right:0;bottom:66px;width:217px;height:212.5px',1)
+          s=s.replace('right:0;bottom:56px;width:200px;height:195.9px','right:0;bottom:68px;width:200px;height:195.9px',1)
+          p.write_text(s)
+          PY
+      - name: Commit update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Fine tune welcome emoji position"
+          git pull --rebase origin main
+          git push
