@@ -1,0 +1,47 @@
+name: Trace exact welcome emoji
+on:
+  push:
+    paths:
+      - '.trace-exact-emoji-trigger'
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replace emoji with traced reference geometry
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('index.html')
+          s=p.read_text()
+
+          old_css='.welcome-watermark{position:absolute;right:-8px;bottom:50px;width:210px;height:210px;color:var(--accent);opacity:.09;transform:rotate(-5deg);pointer-events:none;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}'
+          new_css='.welcome-watermark{position:absolute;right:0;top:320px;width:217px;height:212.5px;pointer-events:none;display:block}'
+          if old_css not in s:
+              raise SystemExit('expected current emoji css not found')
+          s=s.replace(old_css,new_css,1)
+
+          old_media='.welcome-watermark{right:-10px;bottom:52px;width:200px;height:200px}'
+          new_media='.welcome-watermark{right:0;top:292px;width:200px;height:195.9px}'
+          if old_media not in s:
+              raise SystemExit('expected current mobile emoji css not found')
+          s=s.replace(old_media,new_media,1)
+
+          old_svg='<svg class="welcome-watermark" viewBox="0 0 120 120" aria-hidden="true"><g><circle cx="60" cy="60" r="45"/><path d="M38 43l14 11-14 3"/><path d="M84 44L70 54l14 10"/><path d="M29 68L92 84c-5 17-17 26-32 27-16 0-29-8-35-20-4-9-3-18 4-23Z"/></g></svg>'
+          new_svg='<svg class="welcome-watermark" viewBox="0 0 434 425" aria-hidden="true"><g fill="none" stroke="#ebcfce" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"><circle cx="242" cy="243" r="207"/><path d="M171 130 L222 181 L144 179"/><path d="M383 231 L311 234 L367 282"/><path d="M100 216 L350 340 C333 377 288 407 241 412 C178 418 122 389 100 340 C88 312 89 259 100 216 Z"/></g></svg>'
+          if old_svg not in s:
+              raise SystemExit('expected current emoji svg not found')
+          s=s.replace(old_svg,new_svg,1)
+          p.write_text(s)
+          PY
+      - name: Commit update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --cached --quiet || git commit -m "Trace welcome emoji from approved reference"
+          git push
